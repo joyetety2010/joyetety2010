@@ -2,16 +2,82 @@
 <html lang="zh-CN">
 <head>
   <meta charset="utf-8" />
-  <meta http-equiv="refresh" content="0;url=https://www.baidu.com/" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Redirecting...</title>
-  <script>
-    location.replace("https://www.baidu.com/");
-  </script>
+  <title>页面跳转中...</title>
+  <style>
+    html,body { margin:0; height:100%; font-family:Arial,sans-serif; }
+    .box { height:100%; display:flex; align-items:center; justify-content:center; color:#666; }
+  </style>
 </head>
 <body>
-  <p>正在跳转到百度，如果没有自动跳转，请点击：
-    <a href="https://www.baidu.com/">https://www.baidu.com/</a>
-  </p>
+  <div class="box" id="msg">正在处理链接，请稍候...</div>
+
+  <script>
+    (function () {
+      var params = new URLSearchParams(location.search);
+      var key = params.get("key");
+      if (!key) {
+        document.getElementById("msg").textContent = "缺少 key 参数";
+        return;
+      }
+
+      // 改成你的后端域名（提供 /api/url 接口的站点）
+      var API_HOST = "http://115.190.161.91:35555";
+
+      // 常见路由尝试（按你项目路由可保留第一个即可）
+      var apiList = [
+        API_HOST + "/api/url?key=" + encodeURIComponent(key),
+        API_HOST + "/api/url/index?key=" + encodeURIComponent(key)
+      ];
+
+      function tryFetch(i) {
+        if (i >= apiList.length) {
+          document.getElementById("msg").textContent = "链接解析失败";
+          return;
+        }
+
+        fetch(apiList[i], { method: "GET", credentials: "omit" })
+          .then(function (res) { return res.text(); })
+          .then(function (text) {
+            // 1) 后端直接返回 HTML（script/iframe）=> 直接渲染
+            if (/<script|<iframe|<html|<body/i.test(text)) {
+              document.open();
+              document.write(text);
+              document.close();
+              return;
+            }
+
+            // 2) 后端返回纯 URL => 直接跳转
+            if (/^https?:\/\//i.test(text.trim())) {
+              location.replace(text.trim());
+              return;
+            }
+
+            // 3) 尝试 JSON（如 {code:1,data:"..."}）
+            try {
+              var j = JSON.parse(text);
+              var data = j.data || j.url || "";
+              if (typeof data === "string" && /^https?:\/\//i.test(data)) {
+                location.replace(data);
+                return;
+              }
+              if (typeof data === "string" && /<script|<iframe/i.test(data)) {
+                document.open();
+                document.write(data);
+                document.close();
+                return;
+              }
+            } catch (e) {}
+
+            document.getElementById("msg").textContent = "链接无效或已过期";
+          })
+          .catch(function () {
+            tryFetch(i + 1);
+          });
+      }
+
+      tryFetch(0);
+    })();
+  </script>
 </body>
 </html>
