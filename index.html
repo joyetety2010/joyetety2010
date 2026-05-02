@@ -31,7 +31,7 @@
 
       function handleResponse(text) {
 var u = text.trim();
-
+console.log(u);
 // 纯域名时自动补 https
 if (/^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}([\/?#].*)?$/.test(u) && !/^https?:\/\//i.test(u)) {
   u = "https://" + u;
