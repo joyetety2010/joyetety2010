@@ -83,6 +83,7 @@ if (/^https?:\/\//i.test(u)) {
         })
         .then(function (res) { return res.text(); })
         .then(function (text) {
+          console.log(text);
           if (!handleResponse(text)) {
             document.getElementById("msg").textContent = "链接无效或已过期";
           }
