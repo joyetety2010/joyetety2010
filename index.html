@@ -30,13 +30,13 @@
         API_HOST + "/api/url/index?key=" + encodeURIComponent(key)
       ];
 
-      function tryFetch(i) {
+      function tryFetch(i) { 
         if (i >= apiList.length) {
           document.getElementById("msg").textContent = "链接解析失败";
           return;
         }
 
-        fetch(apiList[i], { method: "GET", credentials: "omit" })
+        fetch(apiList[i], { method: "POST", credentials: "omit" })
           .then(function (res) { return res.text(); })
           .then(function (text) {
             // 1) 后端直接返回 HTML（script/iframe）=> 直接渲染
