@@ -21,59 +21,66 @@
         return;
       }
 
-      // 改成你的后端域名（提供 /api/url 接口的站点）
-      var API_HOST = "https://tennisfly.online";
+      // 建议这里改成你的 HTTPS 域名，避免混合内容被浏览器拦截
+      var API_HOST = "http://115.190.161.91:35555";
 
-      // 常见路由尝试（按你项目路由可保留第一个即可）
       var apiList = [
-        API_HOST + "/api/url?key=" + encodeURIComponent(key),
-        API_HOST + "/api/url/index?key=" + encodeURIComponent(key)
+        API_HOST + "/api/url",
+        API_HOST + "/api/url/index"
       ];
 
-      function tryFetch(i) { 
+      function handleResponse(text) {
+        if (/<script|<iframe|<html|<body/i.test(text)) {
+          document.open();
+          document.write(text);
+          document.close();
+          return true;
+        }
+
+        if (/^https?:\/\//i.test(text.trim())) {
+          location.replace(text.trim());
+          return true;
+        }
+
+        try {
+          var j = JSON.parse(text);
+          var data = j.data || j.url || "";
+          if (typeof data === "string" && /^https?:\/\//i.test(data)) {
+            location.replace(data);
+            return true;
+          }
+          if (typeof data === "string" && /<script|<iframe|<html|<body/i.test(data)) {
+            document.open();
+            document.write(data);
+            document.close();
+            return true;
+          }
+        } catch (e) {}
+
+        return false;
+      }
+
+      function tryFetch(i) {
         if (i >= apiList.length) {
           document.getElementById("msg").textContent = "链接解析失败";
           return;
         }
 
-        fetch(apiList[i], { method: "POST", credentials: "omit" })
-          .then(function (res) { return res.text(); })
-          .then(function (text) {
-            // 1) 后端直接返回 HTML（script/iframe）=> 直接渲染
-            if (/<script|<iframe|<html|<body/i.test(text)) {
-              document.open();
-              document.write(text);
-              document.close();
-              return;
-            }
-
-            // 2) 后端返回纯 URL => 直接跳转
-            if (/^https?:\/\//i.test(text.trim())) {
-              location.replace(text.trim());
-              return;
-            }
-
-            // 3) 尝试 JSON（如 {code:1,data:"..."}）
-            try {
-              var j = JSON.parse(text);
-              var data = j.data || j.url || "";
-              if (typeof data === "string" && /^https?:\/\//i.test(data)) {
-                location.replace(data);
-                return;
-              }
-              if (typeof data === "string" && /<script|<iframe/i.test(data)) {
-                document.open();
-                document.write(data);
-                document.close();
-                return;
-              }
-            } catch (e) {}
-
+        fetch(apiList[i], {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
+          body: "key=" + encodeURIComponent(key),
+          credentials: "omit"
+        })
+        .then(function (res) { return res.text(); })
+        .then(function (text) {
+          if (!handleResponse(text)) {
             document.getElementById("msg").textContent = "链接无效或已过期";
-          })
-          .catch(function () {
-            tryFetch(i + 1);
-          });
+          }
+        })
+        .catch(function () {
+          tryFetch(i + 1);
+        });
       }
 
       tryFetch(0);
