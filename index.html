@@ -30,6 +30,18 @@
       ];
 
       function handleResponse(text) {
+var u = text.trim();
+
+// 纯域名时自动补 https
+if (/^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}([\/?#].*)?$/.test(u) && !/^https?:\/\//i.test(u)) {
+  u = "https://" + u;
+}
+
+if (/^https?:\/\//i.test(u)) {
+  location.replace(u);
+  return true;
+}
+        
         if (/<script|<iframe|<html|<body/i.test(text)) {
           document.open();
           document.write(text);
@@ -37,10 +49,7 @@
           return true;
         }
 
-        if (/^https?:\/\//i.test(text.trim())) {
-          location.replace(text.trim());
-          return true;
-        }
+      
 
         try {
           var j = JSON.parse(text);
