@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>跳转中...</title>
+</head>
+<body>
+  <p id="msg">正在跳转，请稍候...</p>
+
+  <script>
+    // 仅允许跳转到这些域名（自己改）
+    const ALLOW_HOSTS = new Set([
+      "example.com",
+      "https://baidu.com"
+    ]);
+
+    function getKey() {
+      const p = new URLSearchParams(location.search);
+      return p.get("key") || "";
+    }
+
+    function b64DecodeUnicode(str) {
+      try {
+        return decodeURIComponent(
+          atob(str).split("").map(c => "%" + c.charCodeAt(0).toString(16).padStart(2, "0")).join("")
+        );
+      } catch (_) {
+        return "";
+      }
+    }
+
+    const key = getKey();
+    const decoded = b64DecodeUnicode(key); // key 里放的是 base64(url)
+    let target = "";
+
+    try {
+      const u = new URL(decoded);
+      if (ALLOW_HOSTS.has(u.hostname)) target = u.toString();
+    } catch (_) {}
+
+    if (!target) {
+      document.getElementById("msg").textContent = "无效或未授权的跳转地址";
+    } else {
+      location.replace(target);
+    }
+  </script>
+</body>
+</html>
